@@ -12,4 +12,5 @@ Route::middleware(['auth:api'])->group(function () {
     // Protected routes
     Route::get('/users/{id}', [UserController::class, 'show'])->whereUuid('id');
     Route::apiResource('organisations', OrganisationsController::class);
+    Route::post('/organisations/{orgId}/users', [OrganisationsController::class, 'addUser']);
 });

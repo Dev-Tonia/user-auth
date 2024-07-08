@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOrganisationRequest;
 use App\Models\Organisation;
+use App\Http\Controllers\JWTAuth;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Traits\HttpResponses;
 use Illuminate\Http\Response;
@@ -36,8 +39,29 @@ class OrganisationsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreOrganisationRequest $request)
     {
+        $request->validated($request->all());
+
+        $organisation = Organisation::create([
+            'name' => $request->name,
+            'description' => $request->description,
+        ]);
+        if ($organisation) {
+            return $this->error(
+                status: 'Bad Request',
+                message: "Client Error",
+                code: Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        $request->user()->organisations()->attach($organisation->orgId);
+
+
+        // Return the organizations as a JSON response
+        return $this->success(data: [
+            'organisations' => $organisation,
+        ], status: "success", message: "organisations retrieved", code: Response::HTTP_OK,);
     }
 
     /**
@@ -63,27 +87,36 @@ class OrganisationsController extends Controller
         );
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function addUser(Request $request, $orgId)
     {
-        //
-    }
+        $request->validate([
+            'userId' => 'required|uuid|exists:users,userId',
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+        $currentUser = auth()->user();
+        $organisation = Organisation::findOrFail($orgId);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        if (!$currentUser->organisations->contains($orgId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You do not have permission to add users to this organisation',
+            ], 403);
+        }
+
+        $user = User::findOrFail($request->userId);
+
+        if ($organisation->users->contains($user->userId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User is already in this organisation',
+            ], 400);
+        }
+
+        $organisation->users()->attach($user->userId);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User added to organisation successfully',
+        ], 200);
     }
 }
