@@ -86,7 +86,6 @@ class OrganisationsController extends Controller
             code: Response::HTTP_OK,
         );
     }
-
     public function addUser(Request $request, $orgId)
     {
         $request->validate([
@@ -105,7 +104,7 @@ class OrganisationsController extends Controller
 
         $user = User::findOrFail($request->userId);
 
-        if (!$organisation->users->contains($user->userId)) {
+        if ($organisation->users->contains($user->userId)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User is already in this organisation',
