@@ -47,7 +47,7 @@ class OrganisationsController extends Controller
             'name' => $request->name,
             'description' => $request->description,
         ]);
-        if ($organisation) {
+        if (!$organisation) {
             return $this->error(
                 status: 'Bad Request',
                 message: "Client Error",
@@ -61,7 +61,7 @@ class OrganisationsController extends Controller
         // Return the organizations as a JSON response
         return $this->success(data: [
             'organisations' => $organisation,
-        ], status: "success", message: "organisations retrieved", code: Response::HTTP_OK,);
+        ], status: "success", message: "organisations created", code: Response::HTTP_CREATED,);
     }
 
     /**
@@ -105,7 +105,7 @@ class OrganisationsController extends Controller
 
         $user = User::findOrFail($request->userId);
 
-        if ($organisation->users->contains($user->userId)) {
+        if (!$organisation->users->contains($user->userId)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User is already in this organisation',
